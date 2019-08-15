@@ -1,6 +1,5 @@
 import os
 import json
-# import requests
 import time
 import paho.mqtt.client as mqtt
 from eospy.cleos import Cleos
@@ -66,12 +65,6 @@ def get_KNYGA_balance(account):
     else:
         KNYGA_balance = 0
     return KNYGA_balance
-
-
-def write_to_eos(msg):
-    transfer_str = "cleos -u " + eos_node_url + " transfer wealthytiger destitutecat '0.0001 EOS' '" + str(msg) + "'"
-    out = os.popen(transfer_str).read()
-    print(out)
 
 
 def is_json(myjson):
@@ -170,18 +163,18 @@ vendor_KNYGA_balance_initial = vendor_KNYGA_balance
 state = 'Start'
 if debug: print('state = ', state)
 
-while state != 'Stop':
+while state.find('Stop') == -1:
 
     # waiting for transaction
     while vendor_EOS_balance == vendor_EOS_balance_initial and vendor_KNYGA_balance == vendor_KNYGA_balance_initial:
         state = 'Waiting for transaction'
+        time.sleep(3)
         if debug: print('state = ', state)
         vendor_EOS_balance = get_EOS_balance(vendor_account)
         if debug: print('vendor EOS balance = ', vendor_EOS_balance)
         vendor_KNYGA_balance = get_KNYGA_balance(vendor_account)
         if debug: print('vendor KNYGA balance = ', vendor_KNYGA_balance)
         #    mqttc.publish(topic_pub2, '1235')
-        time.sleep(3)
 
     # detecting transaction to be processed
     state = 'transactions parsing'
