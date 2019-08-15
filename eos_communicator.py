@@ -192,8 +192,8 @@ while state.find('Stop') == -1:
     if debug: print('state = ', state)
     for n in actions_to_process:
         amount = float(n['quantity'].split(' ')[0])
-        resp = refund(n, amount, 'refund code 01')
-        if debug: print('resp: ', resp)
+        transaction_resp = refund(n, amount, 'refund code 01')
+        if debug: print('resp: ', transaction_resp)
 
     state = 'Stop'
     if debug: print('state = ', state)
