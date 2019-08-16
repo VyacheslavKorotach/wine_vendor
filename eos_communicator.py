@@ -21,9 +21,9 @@ topic_pub2 = 'f3'
 vendor_account = 'wealthysnake'
 active_privat_key = os.environ['WINE_VENDOR_PRIVAT_KEY']
 price = {'EOS': 0.0003, 'KNYGA': 0.0008}
-memo_msgs = ["not enough money, the price is: ",
-             "It's too much. Take the change back. The price is: ",
-             "Thank you! Have a nice day! ;)"]
+memo_msgs = ["Not enough money, the price of wine is: ",
+             "It's too much. Take the change back. The price of wine is: ",
+             "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
 delay_max = 12  # sec - it's max delay from device
 
 
@@ -51,14 +51,18 @@ def on_message(mosq, obj, msg):
         print("it was not a ascii-encoded unicode string")
     if json_string != '' and is_json(json_string):
         d = json.loads(json_string)
-        if 'status' in d.keys() and d['status'] == 'OK' \
-                and 'recv_sequence' in d.keys() and d['recv_sequence'] == goods_number:
-            state = 'we successfully have gave goods out'
-        else:
-            if 'status' in d.keys() and d['status'].find('Error') != -1:
+        if 'status' in d.keys():
+            if d['status'] == 'OK' \
+                    and 'recv_sequence' in d.keys() and d['recv_sequence'] == goods_number:
+                state = 'we successfully have gave goods out'
+            elif d['status'].find('Error') != -1:
                 state = 'We have received the Error code from device.'
+            elif d['status'].find('Restart') != -1:
+                state = 'Restart'
             else:
                 state = 'We have received a wrong message from device. Stop crypto-barman.'
+        else:
+            state = 'We have received a wrong message from device. Stop crypto-barman.'
     if debug: print('state = ', state)
 
 
@@ -156,9 +160,6 @@ def refund(action, amount, memo):
     # use EOSKey:
     key = eospy.keys.EOSKey(active_privat_key)
     resp = ce.push_transaction(trx, key, broadcast=True)
-    # print('------------------------------------------------')
-    # print(resp)
-    # print('------------------------------------------------')
     return resp
 
 
@@ -174,11 +175,14 @@ def give_out_goods(recv_sequence, account):
     mqttc.publish(topic_pub1, '{"recv_sequence": "' + str(recv_sequence) +
                   '", "account": "' + account + '", "tst": ' + str(tst_start) + '}')
     delay = 0
-    while state != "we've gave goods out" and delay < delay_max:
+    while state != 'we successfully have gave goods out' and delay < delay_max:
         delay = int(time.time()) - tst_start
         time.sleep(0.5)
     if state != 'we successfully have gave goods out':
         state = 'Error: giving out goods timeout. Stop crypto-barman.'
+        return False
+    else:
+        return True
 
 
 def money_distribute(price, currency):
@@ -216,10 +220,14 @@ goods_number = 0
 
 if debug: print('state = ', state)
 
-while state.find('Stop') == -1:
+while True:
+
+    while state.find('Stop') != -1:
+        pass
 
     # waiting for transaction
-    while vendor_EOS_balance == vendor_EOS_balance_initial and vendor_KNYGA_balance == vendor_KNYGA_balance_initial:
+    while vendor_EOS_balance == vendor_EOS_balance_initial \
+            and vendor_KNYGA_balance == vendor_KNYGA_balance_initial:
         state = 'Waiting for transaction'
         time.sleep(3)
         if debug: print('state = ', state)
@@ -251,16 +259,24 @@ while state.find('Stop') == -1:
             transaction_resp = refund(n, amount,
                                       memo_msgs[0] + str(price[currency]) + ' ' + currency)
         elif amount > price[currency]:
-            transaction_resp = refund(n, amount - price[currency],
+            transaction_resp = refund(n, round(amount - price[currency], 4),
                                       memo_msgs[1] + str(price[currency]) + ' ' + currency)
-            give_out_goods(n['recv_sequence'], n['account'])
-            money_distribute(price[currency], currency)
+            if give_out_goods(n['recv_sequence'], n['account']):
+                money_distribute(price[currency], currency)
+            else:
+                transaction_resp = refund(n, round(price[currency], 4),
+                                          memo_msgs[3] + str(price[currency]) + ' ' + currency)
         else:
-            transaction_resp = refund(n, 0.0001,
-                                      memo_msgs[2] + str(price[currency]) + ' ' + currency)
-            give_out_goods(n['recv_sequence'], n['account'])
-            money_distribute(price[currency] - 0.0001, currency)
-        if debug: print('resp: ', transaction_resp)
+            if give_out_goods(n['recv_sequence'], n['account']):
+                transaction_resp = refund(n, 0.0001,
+                                          memo_msgs[2] + str(price[currency]) + ' ' + currency)
+                money_distribute(round(price[currency] - 0.0001, 4), currency)
+            else:
+                transaction_resp = refund(n, amount,
+                                          memo_msgs[3] + str(price[currency]) + ' ' + currency)
+        # if debug: print('resp: ', transaction_resp)
+        if debug: print('transaction_id' in transaction_resp.keys())
+        last_processed_action = n['recv_sequence']
 
     state = 'Stop'
     if debug: print('state = ', state)
