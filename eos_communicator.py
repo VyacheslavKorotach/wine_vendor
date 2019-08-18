@@ -7,7 +7,6 @@ import eospy.cleos
 import eospy.keys
 import pytz
 
-message = 'ON'
 debug = True
 topic_sub1 = 'wine_vendor/knygarnya111/device0001/state'
 topic_pub1 = 'wine_vendor/knygarnya111/device0001/ctl'
@@ -16,7 +15,6 @@ depth = 33
 mqtt_host = 'korotach.com'
 mqtt_user = 'igor'
 mqtt_password = 'igor1315'
-topic_pub2 = 'f3'
 bartender_account = 'wealthysnake'
 active_privat_key = os.environ['WINE_VENDOR_PRIVAT_KEY']
 price = {'EOS': 0.0009, 'KNYGA': 0.0008}
@@ -33,20 +31,19 @@ support_part = 1 - vendor_part - owner_part
 
 
 def on_connect(mosq, obj, flags, rc):
-    global topic_sub1
+    # global topic_sub1
     mqttc.subscribe(topic_sub1, 0)
     print("rc: " + str(rc))
 
 
 def on_message(mosq, obj, msg):
-    # get the status string from device
-    # {"recv_sequence": 32, "status": "OK"} or {"recv_sequence": 32, "status": "Error"}
-    global message
-    global topic_pub1
+    """
+    get the status string from device
+    {"recv_sequence": 32, "status": "OK"} or {"recv_sequence": 32, "status": "Error"}
+    or {"status": "Restart"}
+    """
     global state
-    global goods_number
     print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
-    message = msg.payload
     json_string = ''
     d = {}
     try:
@@ -57,7 +54,6 @@ def on_message(mosq, obj, msg):
     if json_string != '' and is_json(json_string):
         d = json.loads(json_string)
         if 'status' in d.keys():
-            if debug: print('d["status"] = ', d['status'], 'goods_number = ', goods_number)
             if d['status'] == 'OK' \
                     and 'recv_sequence' in d.keys() and d['recv_sequence'] == goods_number:
                 state = 'we successfully have gave goods out'
@@ -161,9 +157,6 @@ def refund(action, amount, memo):
     trx = {"actions": [payload]}
     import datetime as dt
     trx['expiration'] = str((dt.datetime.utcnow() + dt.timedelta(seconds=60)).replace(tzinfo=pytz.UTC))
-    # use a string or EOSKey for push_transaction
-    # key = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3"
-    # use EOSKey:
     key = eospy.keys.EOSKey(active_privat_key)
     resp = ce.push_transaction(trx, key, broadcast=True)
     return 'transaction_id' in resp.keys()
@@ -194,9 +187,6 @@ def send_tokens(token, account_to, quantity, memo):
     trx = {"actions": [payload]}
     import datetime as dt
     trx['expiration'] = str((dt.datetime.utcnow() + dt.timedelta(seconds=60)).replace(tzinfo=pytz.UTC))
-    # use a string or EOSKey for push_transaction
-    # key = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3"
-    # use EOSKey:
     key = eospy.keys.EOSKey(active_privat_key)
     resp = ce.push_transaction(trx, key, broadcast=True)
     return 'transaction_id' in resp.keys()
@@ -204,8 +194,6 @@ def send_tokens(token, account_to, quantity, memo):
 
 def give_out_goods(recv_sequence, account):
     global state
-    #    global cmd
-    global topic_pub1
     global goods_number
     goods_number = recv_sequence
     state = 'giving out goods'
@@ -215,8 +203,8 @@ def give_out_goods(recv_sequence, account):
                   ', "account": "' + account + '", "tst": ' + str(tst_start) + '}')
     delay = 0
     while state != 'we successfully have gave goods out' and delay < delay_max:
-        delay = int(time.time()) - tst_start
         time.sleep(0.5)
+        delay = int(time.time()) - tst_start
     if state != 'we successfully have gave goods out':
         state = 'Error: giving out goods timeout. Stop crypto-bartender.'
         return False
@@ -225,12 +213,6 @@ def give_out_goods(recv_sequence, account):
 
 
 def money_distribute(income, token):
-    global vendor_account
-    global vendor_part
-    global owner_account
-    global owner_part
-    global support_account
-    global support_part
     ret = True
     if debug: print('money distributing')
     ret = send_tokens(token, vendor_account, round(income * vendor_part, 4),
@@ -287,7 +269,7 @@ while True:
         state = 'Waiting for transaction'
         mqttc.publish(topic_pub1, 'Ready')
         time.sleep(3)
-        if debug: print('state = ', state)
+        print('state = ', state)
         bartender_EOS_balance = get_EOS_balance(bartender_account)
         if debug: print('bartender EOS balance = ', bartender_EOS_balance)
         bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
@@ -357,4 +339,4 @@ while True:
     bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
     if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
 
-    if debug: print('state =  ', state)
+    if debug: print('state = ', state)
