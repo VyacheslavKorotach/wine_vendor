@@ -11,7 +11,6 @@ message = 'ON'
 debug = True
 topic_sub1 = 'wine_vendor/knygarnya111/device0001/state'
 topic_pub1 = 'wine_vendor/knygarnya111/device0001/ctl'
-# cmd = {'recv_sequence': 0, 'account': ''}
 eos_endpoint = 'https://eos.greymass.com:443'
 depth = 33
 mqtt_host = 'korotach.com'
@@ -20,7 +19,7 @@ mqtt_password = 'igor1315'
 topic_pub2 = 'f3'
 bartender_account = 'wealthysnake'
 active_privat_key = os.environ['WINE_VENDOR_PRIVAT_KEY']
-price = {'EOS': 0.0003, 'KNYGA': 0.0008}
+price = {'EOS': 0.0009, 'KNYGA': 0.0008}
 memo_msgs = ["Not enough money, the price of wine is: ",
              "It's too much. Take the change back. The price of wine is: ",
              "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
@@ -28,7 +27,7 @@ delay_max = 21  # sec - it's max delay from device
 vendor_account = 'wealthytiger'
 vendor_part = 0.5
 owner_account = 'vyacheslavko'
-owner_part = 0.33
+owner_part = 0.3
 support_account = 'destitutecat'
 support_part = 1 - vendor_part - owner_part
 
@@ -48,7 +47,6 @@ def on_message(mosq, obj, msg):
     global goods_number
     print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
     message = msg.payload
-    #    mqttc.publish(topic_pub1, msg.payload)
     json_string = ''
     d = {}
     try:
@@ -178,12 +176,10 @@ def send_tokens(token, account_to, quantity, memo):
         "from": bartender_account,  # sender
         "to": account_to,  # receiver
         "quantity": str(quantity) + ' ' + token,  # In Token
-        # "quantity": 0.0001,  # In Token
         "memo": memo,
     }
     payload = {
         "account": contract_accounts[token],
-        # "account": 'eosio.token',
         "name": 'transfer',
         "authorization": [{
             "actor": bartender_account,
@@ -237,11 +233,15 @@ def money_distribute(income, token):
     global support_part
     ret = True
     if debug: print('money distributing')
-    ret = send_tokens(token, vendor_account, round(income * vendor_part, 4), 'for wine transaction #' + str(goods_number))
-    time.sleep(3)
-    ret = ret and send_tokens(token, owner_account, round(income * owner_part, 4), 'for wine transaction #' + str(goods_number))
-    time.sleep(3)
-    ret = ret and send_tokens(token, support_account, round(round(income, 4) - round(income * vendor_part, 4) - round(income * owner_part, 4), 4), 'for wine transaction #' + str(goods_number))
+    ret = send_tokens(token, vendor_account, round(income * vendor_part, 4),
+                      'for wine transaction #' + str(goods_number))
+    time.sleep(1)
+    ret = ret and send_tokens(token, owner_account, round(income * owner_part, 4),
+                              'for wine transaction #' + str(goods_number))
+    time.sleep(1)
+    ret = ret and send_tokens(token, support_account,
+                              round(round(income, 4) - round(income * vendor_part, 4) - round(income * owner_part, 4),
+                                    4), 'for wine transaction #' + str(goods_number))
     return ret
 
 
@@ -275,8 +275,6 @@ goods_number = 0
 
 if debug: print('state = ', state)
 
-# send_tokens('EOS', 'vyacheslavko', 0.0001, 'test of send_tokens')
-
 while True:
 
     while state.find('Stop') != -1:
@@ -287,13 +285,13 @@ while True:
     while bartender_EOS_balance == bartender_EOS_balance_initial \
             and bartender_KNYGA_balance == bartender_KNYGA_balance_initial:
         state = 'Waiting for transaction'
+        mqttc.publish(topic_pub1, 'Ready')
         time.sleep(3)
         if debug: print('state = ', state)
         bartender_EOS_balance = get_EOS_balance(bartender_account)
         if debug: print('bartender EOS balance = ', bartender_EOS_balance)
         bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
         if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
-        #    mqttc.publish(topic_pub2, '1235')
 
     # detecting transaction to be processed
     state = 'transactions parsing'
@@ -319,15 +317,16 @@ while True:
                     + str(n['recv_sequence']) + ". Money was returned"
         elif amount > price[currency] \
                 and refund(n, round(amount - price[currency], 4), memo_msgs[1] \
-                           + str(price[currency]) + ' ' + currency):
+                                                                  + str(price[currency]) + ' ' + currency):
             state = "Too much money had been sent in transaction # " \
                     + str(n['recv_sequence']) + ". Extra money was returned."
             if give_out_goods(n['recv_sequence'], n['from']):
                 if money_distribute(price[currency], currency):
-                    state = "Money and goods successfully distributed according to transaction # " + str(n['recv_sequence'])
+                    state = "Money and goods successfully distributed according to transaction # " + str(
+                        n['recv_sequence'])
             else:
                 if refund(n, round(price[currency], 4),
-                                          memo_msgs[3] + str(price[currency]) + ' ' + currency):
+                          memo_msgs[3] + str(price[currency]) + ' ' + currency):
                     state = "Something went wrong. Goods can't be delivered. Error processing transaction # " \
                             + n['account'] + ". Money was returned. Stop the crypto-barmen."
                 else:
@@ -336,7 +335,8 @@ while True:
         else:  # It was sent a right price
             if give_out_goods(n['recv_sequence'], n['from']):
                 if money_distribute(round(price[currency] - 0.0001, 4), currency):
-                    state = "Money and goods successfully distributed according to transaction # " + str(n['recv_sequence'])
+                    state = "Money and goods successfully distributed according to transaction # " + str(
+                        n['recv_sequence'])
                     refund(n, 0.0001, memo_msgs[2] + str(price[currency]) + ' ' + currency)
             else:
                 if refund(n, round(price[currency], 4),
@@ -347,17 +347,14 @@ while True:
                     state = "Something went wrong. Goods can't be delivered. Error processing transaction # " \
                             + n['account'] + ". Money can't be returned. Stop the crypto-barmen."
 
-
-
-        #            if give_out_goods(n['recv_sequence'], n['account']):
-#                refund(n, 0.0001, memo_msgs[2] + str(price[currency]) + ' ' + currency)
-#                money_distribute(round(price[currency] - 0.0001, 4), currency)
-#            else:
-#                transaction_resp = refund(n, amount,
-#                                          memo_msgs[3] + str(price[currency]) + ' ' + currency)
-        # if debug: print('resp: ', transaction_resp)
-        # if debug: print('transaction_id' in transaction_resp.keys())
         last_processed_action = n['recv_sequence']
 
-    state = 'Stop'
+    state = 'Nest turn'
+    time.sleep(2)
+    if debug: print('state = ', state)
+    bartender_EOS_balance = get_EOS_balance(bartender_account)
+    if debug: print('bartender EOS balance = ', bartender_EOS_balance)
+    bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+    if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
+
     if debug: print('state = ', state)
