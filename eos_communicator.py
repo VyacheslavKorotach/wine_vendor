@@ -170,7 +170,7 @@ def refund(action, amount, memo):
 
 
 def send_tokens(token, account_to, quantity, memo):
-    contract_accounts = {'EOS': 'eosio.token', 'KNYGA': 'knygarnya111'}
+    contract_accounts = {'EOS': 'eosio.token', 'KNYGA': 'knygarium111'}
     ce = Cleos(url=eos_endpoint)
     arguments = {
         "from": bartender_account,  # sender
