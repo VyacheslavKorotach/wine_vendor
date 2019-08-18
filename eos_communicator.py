@@ -349,7 +349,7 @@ while True:
 
         last_processed_action = n['recv_sequence']
 
-    state = 'Nest turn'
+    state = 'Next turn'
     time.sleep(2)
     if debug: print('state = ', state)
     bartender_EOS_balance = get_EOS_balance(bartender_account)
