@@ -174,15 +174,16 @@ def refund(action, amount, memo):
 def send_tokens(token, account_to, quantity, memo):
     contract_accounts = {'EOS': 'eosio.token', 'KNYGA': 'knygarnya111'}
     ce = Cleos(url=eos_endpoint)
-
     arguments = {
         "from": bartender_account,  # sender
         "to": account_to,  # receiver
-        "quantity": quantity,  # In Token
+        "quantity": str(quantity) + ' ' + token,  # In Token
+        # "quantity": 0.0001,  # In Token
         "memo": memo,
     }
     payload = {
         "account": contract_accounts[token],
+        # "account": 'eosio.token',
         "name": 'transfer',
         "authorization": [{
             "actor": bartender_account,
@@ -234,11 +235,14 @@ def money_distribute(income, token):
     global owner_part
     global support_account
     global support_part
+    ret = True
     if debug: print('money distributing')
-    return send_tokens(token, vendor_account, round(income * vendor_part, 4)) \
-           and send_tokens(token, owner_account, round(income * owner_part, 4)) \
-           and send_tokens(token, support_account,
-                           round(round(income * vendor_part, 4) - round(income * owner_part, 4), 4))
+    ret = send_tokens(token, vendor_account, round(income * vendor_part, 4), 'for wine transaction #' + str(goods_number))
+    time.sleep(3)
+    ret = ret and send_tokens(token, owner_account, round(income * owner_part, 4), 'for wine transaction #' + str(goods_number))
+    time.sleep(3)
+    ret = ret and send_tokens(token, support_account, round(round(income, 4) - round(income * vendor_part, 4) - round(income * owner_part, 4), 4), 'for wine transaction #' + str(goods_number))
+    return ret
 
 
 mqttc = mqtt.Client()
@@ -270,6 +274,8 @@ state = 'Start'
 goods_number = 0
 
 if debug: print('state = ', state)
+
+# send_tokens('EOS', 'vyacheslavko', 0.0001, 'test of send_tokens')
 
 while True:
 
