@@ -24,7 +24,7 @@ price = {'EOS': 0.0003, 'KNYGA': 0.0008}
 memo_msgs = ["Not enough money, the price of wine is: ",
              "It's too much. Take the change back. The price of wine is: ",
              "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
-delay_max = 12  # sec - it's max delay from device
+delay_max = 21  # sec - it's max delay from device
 vendor_account = 'wealthytiger'
 vendor_part = 0.5
 owner_account = 'vyacheslavko'
@@ -58,7 +58,6 @@ def on_message(mosq, obj, msg):
     if debug: print('json_string = ', json_string)
     if json_string != '' and is_json(json_string):
         d = json.loads(json_string)
-        if debug: print('d = ', d)
         if 'status' in d.keys():
             if debug: print('d["status"] = ', d['status'], 'goods_number = ', goods_number)
             if d['status'] == 'OK' \
