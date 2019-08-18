@@ -357,4 +357,4 @@ while True:
     bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
     if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
 
-    if debug: print('state = ', state)
+    if debug: print('state =  ', state)
