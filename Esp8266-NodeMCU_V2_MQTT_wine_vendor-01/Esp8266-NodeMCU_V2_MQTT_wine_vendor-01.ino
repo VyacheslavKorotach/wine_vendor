@@ -181,7 +181,7 @@ void ReadySend(){
     client.publish(topic_pub1, "{\"status\": \"" + Status + "\"}");
     Serial.println(Status);
 //    invert = !invert;
-    display.invertDisplay(invert);
+//    display.invertDisplay(invert);
     scrolltext(Status, 2);
 //    display.invertDisplay(false);
 //    scrolltext(Status, 2);
@@ -202,6 +202,7 @@ void FillGlass(int FDelay){
   Calc = 0;
   delay(FDelay);
   digitalWrite(RELAY_PIN, false);
+  ping_time = millis();
   Calc = NbTopsFan;
   if (Calc < 500) {
     Status = "Error";
@@ -213,6 +214,7 @@ void FillGlass(int FDelay){
       scrolltext(Status, 3);  
       delay(250);
     }
+    ping_time = millis();
   } else {
     Status = "OK";
     client.publish(topic_pub1, "{\"status\": \"" + Status + "\", \"filled\": \"" + String(Calc) + "\", \"account\": \"" + account + "\", \"recv_sequence\": " + recv_sequence + "}");        
@@ -220,6 +222,7 @@ void FillGlass(int FDelay){
     delay(3000);
     scrolltext("THANK YOU!", 2);
     delay(3000);
+    ping_time = millis();
   }
 //  client.publish(topic_pub1, "Filled " + String(Calc));
   delay(50);
@@ -271,6 +274,7 @@ void scrolltext(String text, int size) {
 //    display.stopscroll();
     scroll_type = 0;
     invert = !invert;
+    display.invertDisplay(invert);
 //  delay(1000);
   }
   scroll_type += 1; 

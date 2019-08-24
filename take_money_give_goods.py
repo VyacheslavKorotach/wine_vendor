@@ -66,12 +66,16 @@ def on_message(mosq, obj, msg):
                 state = 'Restart'
             elif d['status'].find('Empty') != -1:
                 state = 'Crypto-vendor is empty.'
+                pass
             elif d['status'].find('Ready') != -1:
                 state = 'Crypto-vendor is ready.'
+                pass
             elif d['status'].find('Busy') != -1:
                 state = 'Crypto-vendor is busy.'
+                pass
             elif d['status'].find('NO CONNECT') != -1:
                 state = 'NO CONNECT'
+                pass
             else:
                 state = 'We have received a wrong message from device. Stop crypto-bartender.'
         else:
