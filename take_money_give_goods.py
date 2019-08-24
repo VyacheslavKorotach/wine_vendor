@@ -35,7 +35,6 @@ support_part = 1 - vendor_part - owner_part
 
 
 def on_connect(mosq, obj, flags, rc):
-    # global topic_sub1
     mqttc.subscribe(topic_sub1, 0)
     print("rc: " + str(rc))
 
@@ -57,9 +56,8 @@ def on_message(mosq, obj, msg):
     if debug: print('json_string = ', json_string)
     if json_string != '' and is_json(json_string):
         d = json.loads(json_string)
-        gn = goods_number
         if 'status' in d.keys():
-            if d['status'].find ('OK') != -1 \
+            if d['status'].find('OK') != -1 \
                     and 'recv_sequence' in d.keys() and d['recv_sequence'] == goods_number:
                 state = 'we successfully have gave goods out'
             elif d['status'].find('Error') != -1:
@@ -278,7 +276,6 @@ while True:
     while bartender_EOS_balance == bartender_EOS_balance_initial \
             and bartender_KNYGA_balance == bartender_KNYGA_balance_initial:
         state = 'Waiting for transaction'
-#        mqttc.publish(topic_pub1, 'Ready')
         # send ping to crypto-bartender (recv_sequence 111 - for ping signal)
         mqttc.publish(topic_pub1, '{"recv_sequence": 111, "status": "Ready", "account": "bartender"}')
         time.sleep(3)
@@ -349,5 +346,3 @@ while True:
     if debug: print('bartender EOS balance = ', bartender_EOS_balance)
     bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
     if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
-
-    if debug: print('state = ', state)
