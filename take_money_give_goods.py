@@ -76,7 +76,7 @@ def on_message(mosq, obj, msg):
                 state = 'We have received a wrong message from device. Stop crypto-bartender.'
         else:
             state = 'We have received a wrong message from device. Stop crypto-bartender.'
-    if debug: print('state = ', state)
+//    if debug: print('state = ', state)
 
 
 def on_publish(mosq, obj, mid):
