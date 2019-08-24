@@ -10,11 +10,11 @@ import pytz
 debug = True
 topic_sub1 = 'wine_vendor/knygarnya111/device0001/state'
 topic_pub1 = 'wine_vendor/knygarnya111/device0001/ctl'
-#eos_endpoint = 'https://eos.greymass.com:443'
-#eos_endpoint = 'https://eosapi.blockmatrix.network:443'
-#eos_endpoint = 'https://eu1.eosdac.io:443'
+# eos_endpoint = 'https://eos.greymass.com:443'
+# eos_endpoint = 'https://eosapi.blockmatrix.network:443'
+# eos_endpoint = 'https://eu1.eosdac.io:443'
 eos_endpoint = 'https://eosbp.atticlab.net'
-#eos_endpoint = 'https://api.eossweden.org'
+# eos_endpoint = 'https://api.eossweden.org'
 depth = 33
 mqtt_host = 'korotach.com'
 mqtt_user = 'igor'
@@ -57,14 +57,21 @@ def on_message(mosq, obj, msg):
     if debug: print('json_string = ', json_string)
     if json_string != '' and is_json(json_string):
         d = json.loads(json_string)
+        gn = goods_number
         if 'status' in d.keys():
-            if d['status'] == 'OK' \
+            if d['status'].find ('OK') != -1 \
                     and 'recv_sequence' in d.keys() and d['recv_sequence'] == goods_number:
                 state = 'we successfully have gave goods out'
             elif d['status'].find('Error') != -1:
                 state = 'We have received the Error code from device.'
             elif d['status'].find('Restart') != -1:
                 state = 'Restart'
+            elif d['status'].find('Empty') != -1:
+                state = 'Crypto-vendor is empty.'
+            elif d['status'].find('Ready') != -1:
+                state = 'Crypto-vendor is ready.'
+            elif d['status'].find('Busy') != -1:
+                state = 'Crypto-vendor is busy.'
             else:
                 state = 'We have received a wrong message from device. Stop crypto-bartender.'
         else:
@@ -263,15 +270,17 @@ if debug: print('state = ', state)
 
 while True:
 
+    # Waiting the change of 'Stop' statement by sending another state in topic_sub1 MQTT
     while state.find('Stop') != -1:
         time.sleep(2)
-        pass
 
     # waiting for transaction
     while bartender_EOS_balance == bartender_EOS_balance_initial \
             and bartender_KNYGA_balance == bartender_KNYGA_balance_initial:
         state = 'Waiting for transaction'
-        mqttc.publish(topic_pub1, 'Ready')
+#        mqttc.publish(topic_pub1, 'Ready')
+        # send ping to crypto-bartender (recv_sequence 111 - for ping signal)
+        mqttc.publish(topic_pub1, '{"recv_sequence": 111, "status": "Ready", "account": "bartender"}')
         time.sleep(3)
         print('state = ', state)
         bartender_EOS_balance = get_EOS_balance(bartender_account)
@@ -332,9 +341,7 @@ while True:
                 else:
                     state = "Something went wrong. Goods can't be delivered. Error processing transaction # " \
                             + n['account'] + ". Money can't be returned. Stop the crypto-barmen."
-
         last_processed_action = n['recv_sequence']
-
     state = 'Next turn'
     time.sleep(2)
     if debug: print('state = ', state)
