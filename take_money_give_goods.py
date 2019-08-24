@@ -70,6 +70,8 @@ def on_message(mosq, obj, msg):
                 state = 'Crypto-vendor is ready.'
             elif d['status'].find('Busy') != -1:
                 state = 'Crypto-vendor is busy.'
+            elif d['status'].find('NO CONNECT') != -1:
+                state = 'NO CONNECT'
             else:
                 state = 'We have received a wrong message from device. Stop crypto-bartender.'
         else:
@@ -277,7 +279,7 @@ while True:
             and bartender_KNYGA_balance == bartender_KNYGA_balance_initial:
         state = 'Waiting for transaction'
         # send ping to crypto-bartender (recv_sequence 111 - for ping signal)
-        mqttc.publish(topic_pub1, '{"recv_sequence": 111, "status": "Ready", "account": "bartender"}')
+        mqttc.publish(topic_pub1, '{"recv_sequence": 111, "status": "Waiting for transaction", "account": "bartender"}')
         time.sleep(3)
         print('state = ', state)
         bartender_EOS_balance = get_EOS_balance(bartender_account)
