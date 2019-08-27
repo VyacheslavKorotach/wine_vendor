@@ -254,7 +254,7 @@ def money_distribute(income, token):
                               'for wine transaction #' + str(goods_number))
     time.sleep(1)
     sent_to_support = send_tokens(token, support_account,
-                    income - sent_to_vendor - sent_to_owner, 'for wine transaction #' + str(goods_number))
+                    round(income - sent_to_vendor - sent_to_owner,4), 'for wine transaction #' + str(goods_number))
     if sent_to_vendor !=0 and sent_to_owner != 0 and sent_to_support !=0:
         return True
     else:
