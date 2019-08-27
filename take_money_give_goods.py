@@ -24,7 +24,7 @@ active_privat_key = os.environ['WINE_VENDOR_PRIVAT_KEY']
 price = {'EOS': 0.5639, 'KNYGA': 50.0000}
 memo_msgs = ["Not enough money, the price of wine is: ",
              "It's too much. Take the change back. The price of wine is: ",
-             "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
+             "Thank you for visiting Knygarium. See you again soon!", "Something went wrong. Take your money back. "]
 delay_max = 21  # sec - it's max delay from device
 vendor_account = 'wealthytiger'
 vendor_part = 0.4
@@ -356,7 +356,7 @@ while True:
                 if money_distribute(round(price[currency] - 0.0001, 4), currency):
                     state = "Money and goods successfully distributed according to transaction # " + str(
                         n['recv_sequence'])
-                    refund(n, 0.0001, memo_msgs[2] + str(price[currency]) + ' ' + currency)
+                    refund(n, 0.0001, memo_msgs[2])
             else:
                 if refund(n, round(price[currency], 4),
                           memo_msgs[3] + str(price[currency]) + ' ' + currency):
