@@ -21,7 +21,7 @@ mqtt_user = 'igor'
 mqtt_password = 'igor1315'
 bartender_account = 'wealthysnake'
 active_privat_key = os.environ['WINE_VENDOR_PRIVAT_KEY']
-price = {'EOS': 0.5639, 'KNYGA': 50.0000}
+price = {'EOS': 0.5639, 'KNYGA': 5.0000}
 memo_msgs = ["Not enough money, the price of wine is: ",
              "It's too much. Take the change back. The price of wine is: ",
              "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
@@ -180,10 +180,21 @@ def refund(action, amount, memo):
 def send_tokens(token, account_to, quantity, memo):
     contract_accounts = {'EOS': 'eosio.token', 'KNYGA': 'knygarium111'}
     ce = Cleos(url=eos_endpoint)
+    quantity_str = str(quantity)
+    qs_start = quantity_str[:quantity_str.find('.')]
+    qs_end = quantity_str[quantity_str.find('.'):]
+    needs_0 = 5 - len(qs_end)
+    if needs_0 < 0:
+        qs_end = qs_end[:5]
+    n = 0
+    while n < needs_0:
+        n += 1
+        qs_end = qs_end + '0'
+    quantity_str = qs_start + qs_end
     arguments = {
         "from": bartender_account,  # sender
         "to": account_to,  # receiver
-        "quantity": str(quantity) + ' ' + token,  # In Token
+        "quantity": quantity_str + ' ' + token,  # In Token
         "memo": memo,
     }
     payload = {
@@ -204,7 +215,11 @@ def send_tokens(token, account_to, quantity, memo):
     trx['expiration'] = str((dt.datetime.utcnow() + dt.timedelta(seconds=60)).replace(tzinfo=pytz.UTC))
     key = eospy.keys.EOSKey(active_privat_key)
     resp = ce.push_transaction(trx, key, broadcast=True)
-    return 'transaction_id' in resp.keys()
+    if ('transaction_id' in resp.keys()):
+        return float(quantity_str)
+    else:
+
+        return 0
 
 
 def give_out_goods(recv_sequence, account):
@@ -230,16 +245,20 @@ def give_out_goods(recv_sequence, account):
 def money_distribute(income, token):
     ret = True
     if debug: print('money distributing')
-    ret = send_tokens(token, vendor_account, round(income * vendor_part, 4),
+    sum_for_vendor = income * vendor_part
+    sent_to_vendor = send_tokens(token, vendor_account, sum_for_vendor,
                       'for wine transaction #' + str(goods_number))
     time.sleep(1)
-    ret = ret and send_tokens(token, owner_account, round(income * owner_part, 4),
+    sum_for_owner = income * owner_part
+    sent_to_owner = send_tokens(token, owner_account, sum_for_owner,
                               'for wine transaction #' + str(goods_number))
     time.sleep(1)
-    ret = ret and send_tokens(token, support_account,
-                              round(round(income, 4) - round(income * vendor_part, 4) - round(income * owner_part, 4),
-                                    4), 'for wine transaction #' + str(goods_number))
-    return ret
+    sent_to_support = send_tokens(token, support_account,
+                    income - sent_to_vendor - sent_to_owner, 'for wine transaction #' + str(goods_number))
+    if sent_to_vendor !=0 and sent_to_owner != 0 and sent_to_support !=0:
+        return True
+    else:
+        return False
 
 
 mqttc = mqtt.Client()

@@ -204,7 +204,7 @@ void FillGlass(int FDelay){
   digitalWrite(RELAY_PIN, false);
   ping_time = millis();
   Calc = NbTopsFan;
-  if (Calc < 380) {
+  if (Calc < 230) {
     Status = "Error";
     client.publish(topic_pub1, "{\"status\": \"" + Status + "\", \"filled\": \"" + String(Calc) + "\"}");
     for (int i=0; i <= 12; i++) {
