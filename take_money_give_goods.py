@@ -21,7 +21,7 @@ mqtt_user = 'igor'
 mqtt_password = 'igor1315'
 bartender_account = 'wealthysnake'
 active_privat_key = os.environ['WINE_VENDOR_PRIVAT_KEY']
-price = {'EOS': 0.5639, 'KNYGA': 5.0000}
+price = {'EOS': 0.5639, 'KNYGA': 50.0000}
 memo_msgs = ["Not enough money, the price of wine is: ",
              "It's too much. Take the change back. The price of wine is: ",
              "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
