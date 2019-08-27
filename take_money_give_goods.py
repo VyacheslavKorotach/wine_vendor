@@ -27,9 +27,9 @@ memo_msgs = ["Not enough money, the price of wine is: ",
              "Thank you! Have a nice day! ;)", "Something went wrong. Take your money back. "]
 delay_max = 21  # sec - it's max delay from device
 vendor_account = 'wealthytiger'
-vendor_part = 0.5
-owner_account = 'vyacheslavko'
-owner_part = 0.3
+vendor_part = 0.4
+owner_account = 'cryptotexty1'
+owner_part = 0.4
 support_account = 'destitutecat'
 support_part = 1 - vendor_part - owner_part
 

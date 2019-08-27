@@ -26,8 +26,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const char *topic_pub1 = "wine_vendor/knygarnya111/device0001/state";
 const char *topic_sub1 = "wine_vendor/knygarnya111/device0001/ctl";
 
-const char *ssid =  "SK-Home";  // Имя вайфай точки доступа
-const char *pass =  "vfksi111"; // Пароль от точки доступа
+const char *ssid =  "KNYGARIUM";  // Имя вайфай точки доступа
+const char *pass =  "knygarium"; // Пароль от точки доступа
 
 const char *mqtt_server = "korotach.com"; // Имя сервера MQTT
 const int mqtt_port = 1883; // Порт для подключения к серверу MQTT
@@ -36,8 +36,8 @@ const char *mqtt_pass = "Vfktymrbq35"; // Пароль от сервера
 
 bool RelayState = false;
 int tm=300;
-int FillDelay=8000;
-int Filled = 2800000;
+int FillDelay=4188;
+int Filled = 50000;
 volatile int NbTopsFan = 0; //measuring the rising edges of the signal
 int Calc = 0;
 // bool Ready = true;
@@ -204,7 +204,7 @@ void FillGlass(int FDelay){
   digitalWrite(RELAY_PIN, false);
   ping_time = millis();
   Calc = NbTopsFan;
-  if (Calc < 500) {
+  if (Calc < 380) {
     Status = "Error";
     client.publish(topic_pub1, "{\"status\": \"" + Status + "\", \"filled\": \"" + String(Calc) + "\"}");
     for (int i=0; i <= 12; i++) {
