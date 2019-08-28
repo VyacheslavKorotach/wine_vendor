@@ -149,11 +149,21 @@ def get_last_actions():
 
 def refund(action, amount, memo):
     ce = Cleos(url=eos_endpoint)
-
+    quantity_str = str(amount)
+    qs_start = quantity_str[:quantity_str.find('.')]
+    qs_end = quantity_str[quantity_str.find('.'):]
+    needs_0 = 5 - len(qs_end)
+    if needs_0 < 0:
+        qs_end = qs_end[:5]
+    n = 0
+    while n < needs_0:
+        n += 1
+        qs_end = qs_end + '0'
+    quantity_str = qs_start + qs_end
     arguments = {
         "from": action['to'],  # sender
         "to": action['from'],  # receiver
-        "quantity": str(amount) + ' ' + action['quantity'].split(' ')[1],  # In Token
+        "quantity": quantity_str + ' ' + action['quantity'].split(' ')[1],  # In Token
         "memo": memo,
     }
     payload = {
