@@ -97,21 +97,33 @@ def on_log(mosq, obj, level, string):
 
 def get_EOS_balance(account):
     ce = Cleos(url=eos_endpoint)
-    EOS_balance_list = ce.get_currency_balance(account)
-    if EOS_balance_list:
+#    EOS_balance_list = ce.get_currency_balance(account)
+#    if EOS_balance_list:
+#        EOS_balance = float(EOS_balance_list[0].split(' ')[0])
+#    else:
+#        EOS_balance = 0
+    try:
+        EOS_balance_list = ce.get_currency_balance(account)
         EOS_balance = float(EOS_balance_list[0].split(' ')[0])
-    else:
-        EOS_balance = 0
+    except (requests.exceptions.HTTPError, json.decoder.JSONDecodeError):
+        print ("Can't get EOS balance")
+        EOS_balance = float(0)
     return EOS_balance
 
 
 def get_KNYGA_balance(account):
     ce = Cleos(url=eos_endpoint)
-    KNYGA_balance_list = ce.get_currency_balance(account, code='knygarium111', symbol='KNYGA')
-    if KNYGA_balance_list:
+#    KNYGA_balance_list = ce.get_currency_balance(account, code='knygarium111', symbol='KNYGA')
+#    if KNYGA_balance_list:
+#        KNYGA_balance = float(KNYGA_balance_list[0].split(' ')[0])
+#    else:
+#        KNYGA_balance = 0
+    try:
+        KNYGA_balance_list = ce.get_currency_balance(account, code='knygarium111', symbol='KNYGA')
         KNYGA_balance = float(KNYGA_balance_list[0].split(' ')[0])
-    else:
-        KNYGA_balance = 0
+    except (requests.exceptions.HTTPError, json.decoder.JSONDecodeError):
+        print ("Can't get KNYGA balance")
+        KNYGA_balance = float(0)
     return KNYGA_balance
 
 
@@ -317,17 +329,17 @@ while True:
         mqttc.publish(topic_pub1, '{"recv_sequence": 111, "status": "Waiting for transaction", "account": "bartender"}')
         time.sleep(3)
         print('state = ', state)
-        try:
-            bartender_EOS_balance = get_EOS_balance(bartender_account)
-        except requests.exceptions.HTTPError:
-            print ("Can't Access Socket Params case 01")
-            bartender_EOS_balance = 0
+#        try:
+        bartender_EOS_balance = get_EOS_balance(bartender_account)
+#        except requests.exceptions.HTTPError:
+#            print ("Can't Access Socket Params case 01")
+#            bartender_EOS_balance = 0
         if debug: print('bartender EOS balance = ', bartender_EOS_balance)
-        try:
-            bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
-        except requests.exceptions.HTTPError:
-            print ("Can't Access Socket Params case 02")
-            bartender_KNYGA_balance = 0
+#        try:
+        bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+#        except requests.exceptions.HTTPError:
+#            print ("Can't Access Socket Params case 02")
+#            bartender_KNYGA_balance = 0
         if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
 
     # detecting transaction to be processed
@@ -387,15 +399,15 @@ while True:
     state = 'Next turn'
     time.sleep(2)
     if debug: print('state = ', state)
-    try:
-        bartender_EOS_balance = get_EOS_balance(bartender_account)
-    except requests.exceptions.HTTPError:
-        print ("Can't Access Socket Params case 03")
-        bartender_EOS_balance = 0
+#    try:
+    bartender_EOS_balance = get_EOS_balance(bartender_account)
+#    except requests.exceptions.HTTPError:
+#        print ("Can't Access Socket Params case 03")
+#        bartender_EOS_balance = 0
     if debug: print('bartender EOS balance = ', bartender_EOS_balance)
-    try:
-        bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
-    except requests.exceptions.HTTPError:
-        print ("Can't Access Socket Params case 04")
-        bartender_KNYGA_balance = 0
+#    try:
+    bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+#    except requests.exceptions.HTTPError:
+#        print ("Can't Access Socket Params case 04")
+#        bartender_KNYGA_balance = 0
     if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
