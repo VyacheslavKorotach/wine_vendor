@@ -387,7 +387,15 @@ while True:
     state = 'Next turn'
     time.sleep(2)
     if debug: print('state = ', state)
-    bartender_EOS_balance = get_EOS_balance(bartender_account)
+    try:
+        bartender_EOS_balance = get_EOS_balance(bartender_account)
+    except requests.exceptions.HTTPError:
+        print ("Can't Access Socket Params case 03")
+        bartender_EOS_balance = 0
     if debug: print('bartender EOS balance = ', bartender_EOS_balance)
-    bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+    try:
+        bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+    except requests.exceptions.HTTPError:
+        print ("Can't Access Socket Params case 04")
+        bartender_KNYGA_balance = 0
     if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
