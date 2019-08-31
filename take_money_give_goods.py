@@ -317,9 +317,17 @@ while True:
         mqttc.publish(topic_pub1, '{"recv_sequence": 111, "status": "Waiting for transaction", "account": "bartender"}')
         time.sleep(3)
         print('state = ', state)
-        bartender_EOS_balance = get_EOS_balance(bartender_account)
+        try:
+            bartender_EOS_balance = get_EOS_balance(bartender_account)
+        except requests.exceptions.HTTPError:
+            print ("Can't Access Socket Params case 01")
+            bartender_EOS_balance = 0
         if debug: print('bartender EOS balance = ', bartender_EOS_balance)
-        bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+        try:
+            bartender_KNYGA_balance = get_KNYGA_balance(bartender_account)
+        except requests.exceptions.HTTPError:
+            print ("Can't Access Socket Params case 02")
+            bartender_KNYGA_balance = 0
         if debug: print('bartender KNYGA balance = ', bartender_KNYGA_balance)
 
     # detecting transaction to be processed
