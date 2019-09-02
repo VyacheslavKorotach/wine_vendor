@@ -6,6 +6,7 @@ from eospy.cleos import Cleos
 import eospy.cleos
 import eospy.keys
 import pytz
+import requests
 
 debug = True
 topic_sub1 = 'wine_vendor/knygarnya111/device0001/state'
