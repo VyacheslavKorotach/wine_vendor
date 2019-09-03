@@ -106,7 +106,7 @@ def get_EOS_balance(account):
     try:
         EOS_balance_list = ce.get_currency_balance(account)
         EOS_balance = float(EOS_balance_list[0].split(' ')[0])
-    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, json.decoder.JSONDecodeError):
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout, json.decoder.JSONDecodeError):
         print ("Can't get EOS balance")
         EOS_balance = float(0)
     return EOS_balance
@@ -122,7 +122,7 @@ def get_KNYGA_balance(account):
     try:
         KNYGA_balance_list = ce.get_currency_balance(account, code='knygarium111', symbol='KNYGA')
         KNYGA_balance = float(KNYGA_balance_list[0].split(' ')[0])
-    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, json.decoder.JSONDecodeError):
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout, json.decoder.JSONDecodeError):
         print ("Can't get KNYGA balance")
         KNYGA_balance = float(0)
     return KNYGA_balance
