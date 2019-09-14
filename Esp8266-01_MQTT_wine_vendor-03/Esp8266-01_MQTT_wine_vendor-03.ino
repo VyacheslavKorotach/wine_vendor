@@ -1,17 +1,17 @@
 // Реле подлкючено к пину IO0
 // Датчик жидкости к пину IO2
+// Датчик влажности к пину IO1 (TXD0)
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
+#include <ArduinoJson.h>
 
-//#define ONE_WIRE_BUS 2
 #define RELAY_PIN 0
 #define HALL_SENSOR 2
+#define HUM_PIN 1
 
-//OneWire oneWire(ONE_WIRE_BUS);
-//DallasTemperature sensors(&oneWire);
+const char *topic_pub1 = "wine_vendor/knygarnya111/device0001/state";
+const char *topic_sub1 = "wine_vendor/knygarnya111/device0001/ctl";
 
 const char *ssid =  "SK-Home";  // Имя вайфай точки доступа
 const char *pass =  "vfksi111"; // Пароль от точки доступа
@@ -21,15 +21,16 @@ const int mqtt_port = 1883; // Порт для подключения к сер�
 const char *mqtt_user = "slkrt"; // Логи от сервер
 const char *mqtt_pass = "Vfktymrbq35"; // Пароль от сервера
 
-#define BUFFER_SIZE 100
-
 bool RelayState = false;
 int tm=300;
-int FillDelay=200;
+int FillDelay=8000;
 int Filled = 2800000;
-float temp=0;
 volatile int NbTopsFan = 0; //measuring the rising edges of the signal
 int Calc = 0;
+// bool Ready = true;
+String Status = "Ready";
+bool Pump_On = false;
+int val = 0;
 
 // Функция получения данных от сервера
 
@@ -37,20 +38,27 @@ void callback(const MQTT::Publish& pub)
 {
   Serial.print(pub.topic());   // выводим в сериал порт название топика
   Serial.print(" => ");
-  Serial.print(pub.payload_string()); // выводим в сериал порт значение полученных данных
+  Serial.println(pub.payload_string()); // выводим в сериал порт значение полученных данных
+
+  char payload[200];
+  pub.payload_string().toCharArray(payload, 200);
   
-  String payload = pub.payload_string();
-  
-  if(String(pub.topic()) == "cryptobarman/00001/ctl") // проверяем из нужного ли нам топика пришли данные 
+  if(String(pub.topic()) == topic_sub1) // проверяем из нужного ли нам топика пришли данные 
   {
-  int stled = payload.toInt(); // преобразуем полученные данные в тип integer
-  RelayState = !(!stled);
-  digitalWrite(RELAY_PIN, RelayState); //  включаем или выключаем реле в зависимоти от полученных значений данных (0 - выключить)
-  NbTopsFan = 0;
-  Calc = 0;
+  if (Status == "Ready") {
+    Pump_On = true;
+  }
+  DynamicJsonBuffer jsonBuffer(200);
+  JsonObject& root = jsonBuffer.parseObject(payload);
+  if (!root.success()) {
+    Serial.println("JSON parsing failed!");
+    return;
+  } else {
+      String account = root["account"];
+      Serial.println(account);
+  }
   }
 }
-
 
 
 WiFiClient wclient;      
@@ -62,8 +70,6 @@ void ICACHE_RAM_ATTR rpm()     //This is the function that the interupt calls
 } 
 
 void setup() {
-  
-//  sensors.begin();
   pinMode(HALL_SENSOR, INPUT_PULLUP);
   Serial.begin(115200);
   attachInterrupt(digitalPinToInterrupt (HALL_SENSOR), rpm, RISING);
@@ -72,11 +78,10 @@ void setup() {
   Serial.println();
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
+  pinMode(HUM_PIN, INPUT);
 }
 
 void loop() {
-  sei();
-//  cli();
   // подключаемся к wi-fi
   if (WiFi.status() != WL_CONNECTED) {
     Serial.print("Connecting to ");
@@ -93,68 +98,70 @@ void loop() {
   if (WiFi.status() == WL_CONNECTED) {
     if (!client.connected()) {
       Serial.println("Connecting to MQTT server");
-      if (client.connect(MQTT::Connect("arduinoClient2")
+      if (client.connect(MQTT::Connect("device0001")
                          .set_auth(mqtt_user, mqtt_pass))) {
         Serial.println("Connected to MQTT server");
         client.set_callback(callback);
-        client.subscribe("cryptobarman/00001/ctl"); // подписывааемся по топик с данными для реле насоса
+        client.subscribe(topic_sub1); // подписывааемся по топик с данными для насоса крипто-бармена
       } else {
         Serial.println("Could not connect to MQTT server");   
       }
     }
 
     if (client.connected()){
-      
-//      attachInterrupt(digitalPinToInterrupt (HALL_SENSOR), rpm, RISING);
       client.loop();
-//      sei();      //Enables interrupts
-//      delay (1000);   //Wait 1 second
-//      cli();      //Disable interrupts
-      TempSend();
-      if (RelayState)
-      {
-        FillGlass();
+      if (Status == "Ready" and Pump_On) {
+        FillGlass(FillDelay);
       }
-//      detachInterrupt(digitalPinToInterrupt (HALL_SENSOR)); 
+      ReadySend();
+    }  
   }
-  
-}
 } // конец основного цикла
 
 
-// Функция отправки показаний с термодатчика
-void TempSend(){
+// Функция отправки в соотв. топик MQTT брокера признака готовности устройства
+void ReadySend(){
   if (tm<=0)
   {
-//  client.publish("cryptobarman/00001/filled",String(temp)); // отправляем в топик для термодатчика значение температуры
-  client.publish("cryptobarman/00001/filled","active");
-  Serial.println(temp);
-  tm = 300;  // пауза меду отправками значений температуры  коло 3 секунд
+    Status = "Ready";
+    val = digitalRead(HUM_PIN);
+    Serial.println("val = " + String(val));
+    if (val) {
+      Status = "Empty";
+    }
+//    client.publish(topic_pub1, Status + " val = " + val);
+    client.publish(topic_pub1, "{\"status\": \"" + Status + "\"}");
+    Serial.println(Status);
+    tm = 300;  // пауза меду отправками признака готовности около 3 секунд
   }
   tm--; 
   delay(10);  
 }
 
 //Функция налива 100 грамм
-void FillGlass(){
-  if (FillDelay <= 0)
-  {
-    RelayState = false;
-    NbTopsFan = 0;
-    FillDelay = 200;
-    client.publish("cryptobarman/00001/filled",String(Calc));
-  }
-  FillDelay--;
-  delay(10);
-  if (Calc >= Filled)
-  {
-    RelayState = false;
-    NbTopsFan = 0;
-    client.publish("cryptobarman/00001/filled",String(Calc));
-  }
-  digitalWrite(RELAY_PIN, RelayState);
-//  cli();      //Disable interrupts
-//  Calc = (NbTopsFan * 60 / 73); //(Pulse frequency x 60) / 73Q, = flow rate in L/hour 
+void FillGlass(int FDelay){
+  Status = "Busy";
+//  client.publish(topic_pub1, Status);
+  client.publish(topic_pub1, "{\"status\": \"" + Status + "\"}");
+  digitalWrite(RELAY_PIN, true);
+  NbTopsFan = 0;
+  Calc = 0;
+  delay(FDelay);
+  digitalWrite(RELAY_PIN, false);
   Calc = NbTopsFan;
-//  sei();
+  if (Calc < 500) {
+    Status = "Error";
+    client.publish(topic_pub1, "{\"status\": \"" + Status + "\", \"filled\": \"" + String(Calc) + "\"}");
+//    client.publish(topic_pub1, "{\"status\": \"" + Status + "\"}");
+//    client.publish(topic_pub1, "Filled " + String(Calc));    
+  } else {
+    Status = "OK";
+    client.publish(topic_pub1, "{\"status\": \"" + Status + "\", \"filled\": \"" + String(Calc) + "\"}");    
+  }
+//  client.publish(topic_pub1, "Filled " + String(Calc));
+  delay(50);
+  Status = "Ready";
+//  client.publish(topic_pub1, Status);
+  client.publish(topic_pub1, "{\"status\": \"" + Status + "\"}");
+  Pump_On = false;
 }
