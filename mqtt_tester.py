@@ -2,19 +2,19 @@ import time
 import paho.mqtt.client as mqtt
 
 message = 'ON'
-topic_sub1 = 'f'
-topic_pub1 = 'f2'
+TOPIC_SUB1 = 'f'
+TOPIC_PUB1 = 'f2'
 
 
 def on_connect(mosq, obj, flags, rc):
-    global topic_sub1
+    global TOPIC_SUB1
     mqttc.subscribe(topic_sub1, 0)
     print("rc: " + str(rc))
 
 
 def on_message(mosq, obj, msg):
     global message
-    global topic_pub1
+    global TOPIC_PUB1
     print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
     message = msg.payload
     mqttc.publish(topic_pub1, msg.payload)
